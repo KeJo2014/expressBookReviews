@@ -5,24 +5,77 @@ const regd_users = express.Router();
 
 let users = [];
 
-const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
+const isValid = (username) => { //returns boolean
+    let userswithsamename = users.filter((user) => {
+        return user.username === username
+    });
+    if (userswithsamename.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
-const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
+const authenticatedUser = (username, password) => { //returns boolean
+    let validusers = users.filter((user) => {
+        return (user.username === username && user.password === password)
+    });
+    if (validusers.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 //only registered users can login
-regd_users.post("/login", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+regd_users.post("/login", (req, res) => {
+    // const username = req.body.username;
+    // const password = req.body.password;
+
+    const username = "TEST";
+    const password = "TESTPW";
+
+    if (!username || !password) {
+        return res.status(404).json({ message: "Error logging in" });
+    }
+
+    if (authenticatedUser(username, password)) {
+        let accessToken = jwt.sign({
+            data: password
+        }, 'access', { expiresIn: 60 * 60 });
+
+        req.session.authorization = {
+            accessToken, username
+        }
+        return res.status(200).send("User successfully logged in");
+    } else {
+        return res.status(208).json({ message: "Invalid Login. Check username and password" });
+    }
 });
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = parseInt(req.params.isbn);
+    const comment = req.params.comment;
+    if(books[isbn]){
+        const book = books[isbn];
+        const user = req.session.username;
+        res.status(200).json({user});
+        let edited = false;
+        for (let [key, value] of Object.entries(book.reviews)) {
+            if(value.author === user){
+                value.comment = comment;
+                edit = true;
+            }
+        }
+        if(!edited){
+            return res.status(200).json({"msg":"Your comment was created."});
+        }else{
+            return res.status(200).json({"msg":"Your comment was edited."});
+        }
+    }else{
+        return res.status(404).json({"error": "This ISBN is not known to us."});
+    }
 });
 
 module.exports.authenticated = regd_users;
